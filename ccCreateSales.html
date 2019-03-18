@@ -1,0 +1,151 @@
+<aura:component controller="ccSearchController" implements="flexipage:availableForAllPageTypes" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!-- Aura atrritbute open -->
+    <aura:attribute name="params" 
+                    type="Object" 
+                    access="public"
+                    description="Get the lead, Opportunity, type, action"/>
+    
+    <aura:attribute name="parentComponent" 
+                    type="Aura.Component"
+                    access="public"
+                    description="Parent Component Instance"/>
+    
+    <aura:attribute name="lstOfRecordType" 
+                    type="String"
+                    access="private"
+                    description="Lead and Opportunity based recordtype name get"/>
+    
+    <aura:attribute name="radioValue" 
+                    type="String"
+                    access="private"
+                    description="Recordtype change and get the recordtype" />
+    
+    <aura:attribute name="openRecordTypeSelection"
+                    type="Boolean"
+                    access="private"
+                    default="false"
+                    description="Show record type selection if set to true."/>
+	
+    <aura:attribute name="openAccountConfirmation"
+                    type="Boolean"
+                    access="private"
+                    default="false"
+                    description="Open Account confimation mode if set to true."/>
+    
+    <aura:attribute name="oppObj"
+                    type="Opportunity"
+                    access="private"
+                    default="{}"
+                    description="Opportunity object to get account information in lookup."/>
+    
+    <aura:attribute name="accName"
+                    type="String"
+                    access="private"
+                    description="Role and Tenderer company name get"/>
+    
+    <aura:attribute name="url" type="String"/>
+    <aura:attribute name="accounturl" type="String"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    <lightning:navigation aura:id="navService"/>
+
+    <!-- Aura attributes closed -->
+        
+    <lightning:overlayLibrary aura:id="overlayLib" />
+   
+    <!-- Model Box Start -->    
+    <div style="height: 640px;">
+        <!-- Record Type selection to create record -->
+        <aura:if isTrue="{!v.openRecordTypeSelection}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                     aria-modal="true" aria-describedby="modal-content-id-1"
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                                title="Close" onclick="{!c.closeRecordTypesSelction}">
+                            <lightning:icon iconName="utility:close" alternativeText="Connected" size="small"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Lead</h2>
+                        
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-p-around--medium slds-p-vertical_x-large">
+                            <div class="slds-grid slds-wrap">
+                                <div class="slds-size--1-of-1 slds-large-size--1-of-3 slds-small-size--1-of-1">
+                                    <div class="slds-text-align_right sldsAlignCenter slds-p-top_x-small">Select a record type</div>                            
+                                </div>
+                                <div class="slds-size--1-of-1 slds-m-left_x-large slds-p-top_large slds-large-size--1-of-2 slds-small-size--1-of-1">
+                                    <aura:iteration items="{!v.lstOfRecordType}" var="recordType" aura:id="recordType" indexVar="inindex">
+                                        <ui:inputRadio name="record" class="slds-float--left slds-p-around_small" label="{!recordType.Name}"
+                                                   labelClass="slds-radio__label slds-m-left--small slds-m-right--x-large"
+                                                   text="{!recordType.Id}"
+                                                   change="{!c.getRecordType}"
+                                                   aura:id="{!recordType.Id}"
+                                                   value="{!recordType.isDefaultRecordTypeMapping}"    />
+                                        <span class="slds-p-left_xx-large">{!recordType.Description}</span>
+                                    </aura:iteration>
+                                </div>
+                            </div>                   
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick="{!c.closeRecordTypesSelction}">Cancel</button>
+                        <button class="slds-button slds-button_brand" onclick="{!c.afterRecordTypeSelection}">Next</button>
+                    </footer>
+                </div>
+            </section>
+        </aura:if>
+        
+        <!-- Confirm Account for Opportunity -->
+        <aura:if isTrue="{!v.openAccountConfirmation}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                     aria-modal="true" aria-describedby="modal-content-id-1"
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
+                                title="Close" onclick="{!c.closeRecordTypesSelction}">
+                            <lightning:icon iconName="utility:close" alternativeText="Connected" size="small"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-ac-01" class="slds-text-heading_medium slds-hyphenate">Select Company</h2>
+                        
+                    </header>
+                    
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-p-around--medium slds-p-vertical_x-medium">
+                            <lightning:layout multipleRows="true" class="slds-m-bottom_small">
+                                <lightning:layoutItem flexibility="auto" size="12" largeDeviceSize="12" mediumDeviceSize="12" smallDeviceSize="12">
+                                    <lightning:input label="Cordell Company" type="text" name="cordellCompany" disabled="true" value="{!v.accName}" />
+                                </lightning:layoutItem>
+                                
+                                <lightning:layoutItem class="sldsIcons slds-m-top_small" flexibility="auto" size="12" largeDeviceSize="12" mediumDeviceSize="12" smallDeviceSize="12">
+                                    <lightning:recordEditForm objectApiName="Opportunity">
+                                    	<label class="slds-form-element__label" for="accountName">Company Name</label>
+                                        <lightning:inputField class="companyName" variant="label-hidden" aura:id="accountName" label="Company Name" fieldName="AccountId" onchange="{!c.onAccountChange}" value="{!v.oppObj.AccountId}"/>
+                                    </lightning:recordEditForm>
+                                    <!--<lightning:icon class="slds-m-top_large icons" iconName="utility:info" alternativeText="Approved" />-->
+                                </lightning:layoutItem>
+                            </lightning:layout>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer sldsFooter">
+                        <!--<p><lightning:formattedUrl target="_blank" value="{!v.accounturl}" aura:id="createCompany" tooltip="Create Opportunity" label="Create Opportunity" /></p>-->
+                        <!--<lightning:layoutItem aura:id="createCompany"><a class="slds-button slds-button_brand" href="{!v.accounturl}" target="_blank">Create Company</a></lightning:layoutItem>-->
+                        <lightning:button aura:id="createCompany" class="slds-m-vertical_xx-small" variant="brand" title="Create Company"><a class="companyBtn" href="{!v.accounturl}" target="_blank"><lightning:icon class="slds-p-around_xxx-small" iconName="action:new_account" alternativeText="Utility image" /> Create Company</a></lightning:button>
+                        <!--<lightning:button aura:id="createCompany" class="slds-m-bottom_x-small" variant="brand" label="Create Company" iconName="action:new_account" iconPosition="left" title="Create Company" onclick="{!c.createAccountSelection}" />-->
+                        <!-- <button aura:id="createCompany" class="slds-m-bottom_x-small" variant="brand" label="Create Company" iconName="action:new_account" iconPosition="left" title="Create Company" onclick="{!c.createAccountSelection}" ><a href="#" target="_blank"/></button> -->
+                        <lightning:button aura:id="createOpportunity" variant="brand" class="slds-m-vertical_xx-small slds-m-right_xx-small" label="Create Opportunity" iconName="action:new_opportunity" iconPosition="left" title="Create Opportunity" onclick="{!c.createOpportunity}" />
+                    </footer>
+                    
+                </div>
+            </section>
+        </aura:if>
+        
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+    <!-- Model Box Closed -->    
+  
+</aura:component>
